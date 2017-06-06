@@ -40,3 +40,31 @@ mod utils;
 
 pub use passes::Parser;
 pub use parse::{Event, Tag, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+
+extern crate libc;
+
+use libc::c_char;
+use std::ffi::{CStr, CString};
+
+#[no_mangle]
+pub extern fn html(s: *const c_char) -> CString {
+    let c_str = unsafe {
+        assert!(!s.is_null());
+
+        CStr::from_ptr(s)
+    };
+
+    let r_str = c_str.to_str().unwrap();
+    let mut s = String::with_capacity(r_str.len() * 3 / 2);
+    let p = Parser::new_ext(r_str, Options::empty());
+    html::push_html(&mut s, p);
+    let c_str = CString::new(s).unwrap();
+    c_str
+}
+
+#[no_mangle]
+pub extern fn free_html(c: *mut c_char) {
+    unsafe {
+        CString::from_raw(c);
+    }
+}

@@ -17,7 +17,12 @@ doc = false
 [dependencies]
 bitflags = "0.9"
 getopts = { version = "0.2", optional = true }
+libc = "0.2.23"
 
 [features]
 default = ["getopts"]
 gen-tests = []
+
+[lib]
+name = "pulldown_cmark"
+crate-type = ["rlib", "dylib"]
