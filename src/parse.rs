@@ -103,6 +103,7 @@ pub enum Tag<'a> {
     Code,
     Link(Cow<'a, str>, Cow<'a, str>),
     Image(Cow<'a, str>, Cow<'a, str>),
+    RedditLink,
 }
 
 #[derive(Clone, Debug)]
@@ -184,7 +185,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`<" {
+            for &c in b"\x00\t\n\r_\\&*[!`</ur" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -949,11 +950,13 @@ impl<'a> RawParser<'a> {
         }
     }
 
+    // ZT: this chunks the string
     fn next_inline(&mut self) -> Event<'a> {
         let bytes = self.text.as_bytes();
         let beg = self.off;
         let mut i = beg;
         let limit = self.limit();
+        println!("{}: {}", beg, limit);
         while i < limit {
             match bytes[i..limit].iter().position(|&c| self.active_tab[c as usize] != 0) {
                 Some(pos) => i += pos,
@@ -987,6 +990,7 @@ impl<'a> RawParser<'a> {
                 return Event::Text(Borrowed(&self.text[beg..i]));
             }
             if let Some(event) = self.active_char(c) {
+                println!("you are here with {:?}", event);
                 return event;
             }
             i = self.off;  // let handler advance offset even on None
@@ -1001,6 +1005,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
+        println!("active_char: {}", c);
         match c {
             b'\x00' => Some(self.char_null()),
             b'\t' => Some(self.char_tab()),
@@ -1012,6 +1017,7 @@ impl<'a> RawParser<'a> {
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
+            b'/' | b'u' | b'r' => self.char_redditlink(),
             _ => None
         }
     }
@@ -1059,12 +1065,42 @@ impl<'a> RawParser<'a> {
         }
     }
 
+    fn char_redditlink(&mut self) -> Option<Event<'a>> {
+        let beg = self.off;
+        let limit = self.limit();
+        let mut i = beg;
+
+        let next = beg;
+
+        // ZT: figure out how to scan to next whitespace
+        i += self.scan_whitespace_inline(&self.text[i..limit]);
+        self.off = i;
+
+        println!("##### {} - {}", next, self.off);
+        None
+        // let beg = self.off;
+        // let limit = self.limit();
+        // let mut i = beg;
+        // let (n, code_beg, code_end) = self.scan_inline_code(&self.text[i..limit]);
+        // if n == 0 {
+        //     self.off += code_beg - 1;
+        //     return None;
+        // }
+        // i += code_beg;
+        // let end = beg + code_end;
+        // let next = beg + n;
+        // i += self.scan_whitespace_inline(&self.text[i..limit]);
+        // self.off = i;
+        // self.state = State::InlineCode;
+        // Some(self.start(Tag::Code, end, next))
+    }
+
     fn char_emphasis(&mut self) -> Option<Event<'a>> {
         // can see to left for flanking info, but not past limit
-        let limit = self.limit();
-        let data = &self.text[..limit];
+        let limit = self.limit(); // ZT: length of string
+        let data = &self.text[..limit]; // ZT: everything up to length
 
-        let c = data.as_bytes()[self.off];
+        let c = data.as_bytes()[self.off]; // byte of offset character
         let (n, can_open, _can_close) = compute_open_close(data, self.off, c);
         if !can_open {
             return None;
@@ -1072,6 +1108,7 @@ impl<'a> RawParser<'a> {
         let mut stack = vec![n];  // TODO performance: don't allocate
         let mut i = self.off + n;
         while i < limit {
+            println!("{}", data.chars().nth(i).unwrap());
             let c2 = data.as_bytes()[i];
             if c2 == b'\n' && !is_escaped(data, i) {
                 let (_, complete, space) = self.scan_containers(&self.text[i..]);

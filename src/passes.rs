@@ -20,8 +20,8 @@
 
 //! Main public pull parse interface, running two passes over input.
 
-use parse::{RawParser, Event, Tag, Options, OPTION_FIRST_PASS};
-use std::collections::HashSet;
+use parse::{RawParser, Event, Tag, Options, OPTION_FIRST_PASS, OPTION_ENABLE_TABLES};
+use std::collections::{HashMap, HashSet};
 
 pub struct Parser<'a> {
     inner: RawParser<'a>,
@@ -34,21 +34,24 @@ impl<'a> Parser<'a> {
         Parser::new_ext(text, Options::empty())
     }
     pub fn new_ext(text: &'a str, mut opts: Options) -> Parser<'a> {
+        // ZT: always enable tables
+        opts.insert(OPTION_ENABLE_TABLES);
         opts.remove(OPTION_FIRST_PASS);
         // first pass, collecting info
         let first_opts = opts | OPTION_FIRST_PASS;
         let mut first = RawParser::new(text, first_opts);
-        while first.next().is_some() { }
+        // while first.next().is_some() { }
         let info = first.get_info();
 
         // second pass
         let loose_lists = info.loose_lists;
-        let second = RawParser::new_with_links(text, opts, info.links);
+        // ZT: skip the first pass cause I have no clue what it does
+        let second = RawParser::new_with_links(text, opts, HashMap::new());
 
-        //println!("loose lists: {:?}", info.loose_lists);
+        // println!("loose lists: {:?}", loose_lists);
         Parser {
             inner: second,
-            loose_lists: loose_lists,
+            loose_lists: HashSet::new(), // ZT: instead of loose_lists
             loose_stack: Vec::new(),
         }
     }
@@ -63,7 +66,8 @@ impl<'a> Iterator for Parser<'a> {
 
     fn next(&mut self) -> Option<Event<'a>> {
         loop {
-            match self.inner.next() {
+            let next = self.inner.next();
+            match next {
                 Some(event) => {
                     match event {
                         Event::Start(Tag::List(_)) => {

@@ -264,12 +264,13 @@ pub fn scan_atx_header(data: &str) -> (usize, i32) {
     let level = scan_ch_repeat(data, b'#');
     let i = level;
     if level >= 1 && level <= 6 {
-        if i < size {
-            match data.as_bytes()[i] {
-                b' ' | b'\t' ... b'\r' => (),
-                _ => return (0, 0)
-            }
-        }
+        // ZT: removing to enable heading with no space between # and text
+        // if i < size {
+        //     match data.as_bytes()[i] {
+        //         b' ' | b'\t' ... b'\r' => (),
+        //         _ => return (0, 0)
+        //     }
+        // }
         (i, level as i32)
     } else {
         (0, 0)
@@ -441,6 +442,7 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
                 right_flanking && (!left_flanking || punc_after)),
         _ => (false, false)
     };
+    println!("{:?}", (end - loc, can_open, can_close));
     (end - loc, can_open, can_close)
 }
 
