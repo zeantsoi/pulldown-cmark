@@ -101,6 +101,7 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Code,
+    Strikethrough,
     Link(Cow<'a, str>, Cow<'a, str>),
     Image(Cow<'a, str>, Cow<'a, str>),
     RedditLink,
@@ -185,7 +186,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`</ur" {
+            for &c in b"\x00\t\n\r_\\&*[!`<~/ur" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -956,7 +957,7 @@ impl<'a> RawParser<'a> {
         let beg = self.off;
         let mut i = beg;
         let limit = self.limit();
-        println!("{}: {}", beg, limit);
+        // println!("{}: {}", beg, limit);
         while i < limit {
             match bytes[i..limit].iter().position(|&c| self.active_tab[c as usize] != 0) {
                 Some(pos) => i += pos,
@@ -1005,7 +1006,7 @@ impl<'a> RawParser<'a> {
     }
 
     fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
-        println!("active_char: {}", c);
+        // println!("active_char: {}", c);
         match c {
             b'\x00' => Some(self.char_null()),
             b'\t' => Some(self.char_tab()),
@@ -1013,6 +1014,7 @@ impl<'a> RawParser<'a> {
             b'&' => self.char_entity(),
             b'_' |
             b'*' => self.char_emphasis(),
+            b'~' => self.char_tilde(),
             b'[' if self.opts.contains(OPTION_ENABLE_FOOTNOTES) => self.char_link_footnote(),
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
@@ -1076,7 +1078,7 @@ impl<'a> RawParser<'a> {
         i += self.scan_whitespace_inline(&self.text[i..limit]);
         self.off = i;
 
-        println!("##### {} - {}", next, self.off);
+        // println!("##### {} - {}", next, self.off);
         None
         // let beg = self.off;
         // let limit = self.limit();
@@ -1095,6 +1097,93 @@ impl<'a> RawParser<'a> {
         // Some(self.start(Tag::Code, end, next))
     }
 
+    fn char_tilde(&mut self) -> Option<Event<'a>> {
+        // can see to left for flanking info, but not past limit
+        let limit = self.limit(); // ZT: length of string
+        let data = &self.text[..limit]; // ZT: everything up to length
+
+        let c = data.as_bytes()[self.off]; // byte of offset character
+        let (n, can_open, _can_close) = compute_open_close(data, self.off, c);
+        if !can_open {
+            return None;
+        }
+        let mut stack = vec![n];  // TODO performance: don't allocate
+        let mut i = self.off + n;
+        while i < limit {
+            let c2 = data.as_bytes()[i];
+            if c2 == b'\n' && !is_escaped(data, i) {
+                let (_, complete, space) = self.scan_containers(&self.text[i..]);
+                if !complete {
+                    i += 1;
+                    continue;
+                }
+                if self.is_inline_block_end(&self.text[i + 1 .. limit], space) {
+                    return None
+                } else {
+                    i += 1;
+                }
+            } else if c2 == c && !is_escaped(data, i) {
+                let (mut n2, can_open, can_close) = compute_open_close(data, i, c);
+                if can_close {
+                    loop {
+                        let ntos = stack.pop().unwrap();
+                        if ntos > n2 {
+                            stack.push(ntos - n2);
+                            break;
+                        }
+                        if stack.is_empty() {
+                            let npop = if ntos < n2 { ntos } else { n2 };
+                            if npop == 1 {
+                                self.off += 1;
+                                return None;
+                            } else {
+                                self.off += 2;
+                                let next = i + npop;
+                                return Some(self.start(Tag::Strikethrough, next - 2, next));
+                            }
+                        } else {
+                            i += ntos;
+                            n2 -= ntos;
+                        }
+                    }
+                } else if can_open {
+                    stack.push(n2);
+                }
+                i += n2;
+            } else if c2 == b'`' {
+                let (n, beg, _) = self.scan_inline_code(&self.text[i..limit]);
+                if n != 0 {
+                    i += n;
+                } else {
+                    i += beg;
+                }
+            } else if c2 == b'<' {
+                let n = self.scan_autolink_or_html(&self.text[i..limit]);
+                if n != 0 {
+                    i += n;
+                } else {
+                    i += 1;
+                }
+            } else if c2 == b'[' {
+                if self.opts.contains(OPTION_ENABLE_FOOTNOTES) {
+                    if let Some((_, n)) = self.parse_footnote(&self.text[i..limit]) {
+                        i += n;
+                        continue;
+                    }
+                }
+                if let Some((_, _, _, n)) = self.parse_link(&self.text[i..limit], false) {
+                    i += n;
+                } else {
+                    i += 1;
+                }
+            } else {
+                i += 1;
+            }
+        }
+        None
+
+    }
+
     fn char_emphasis(&mut self) -> Option<Event<'a>> {
         // can see to left for flanking info, but not past limit
         let limit = self.limit(); // ZT: length of string
@@ -1108,7 +1197,7 @@ impl<'a> RawParser<'a> {
         let mut stack = vec![n];  // TODO performance: don't allocate
         let mut i = self.off + n;
         while i < limit {
-            println!("{}", data.chars().nth(i).unwrap());
+            // println!("{}", data.chars().nth(i).unwrap());
             let c2 = data.as_bytes()[i];
             if c2 == b'\n' && !is_escaped(data, i) {
                 let (_, complete, space) = self.scan_containers(&self.text[i..]);

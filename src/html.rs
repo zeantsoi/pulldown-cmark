@@ -147,6 +147,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             }
             Tag::Emphasis => self.buf.push_str("<em>"),
             Tag::Strong => self.buf.push_str("<strong>"),
+            Tag::Strikethrough => self.buf.push_str("<del>"),
             Tag::Code => self.buf.push_str("<code>"),
             Tag::Link(dest, title) => {
                 self.buf.push_str("<a href=\"");
@@ -219,6 +220,7 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Item => self.buf.push_str("</li>\n"),
             Tag::Emphasis => self.buf.push_str("</em>"),
             Tag::Strong => self.buf.push_str("</strong>"),
+            Tag::Strikethrough => self.buf.push_str("</del>"),
             Tag::Code => self.buf.push_str("</code>"),
             Tag::Link(_, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start

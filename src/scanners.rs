@@ -440,6 +440,7 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
         b'*' => (left_flanking, right_flanking),
         b'_' => (left_flanking && (!right_flanking || punc_before),
                 right_flanking && (!left_flanking || punc_after)),
+        b'~' => (left_flanking, right_flanking),
         _ => (false, false)
     };
     println!("{:?}", (end - loc, can_open, can_close));
