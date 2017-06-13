@@ -101,6 +101,7 @@ pub enum Tag<'a> {
     Emphasis,
     Strong,
     Code,
+    Underline,
     Strikethrough,
     Link(Cow<'a, str>, Cow<'a, str>),
     Image(Cow<'a, str>, Cow<'a, str>),
@@ -136,6 +137,8 @@ bitflags! {
 }
 
 const MAX_LINK_NEST: usize = 10;
+
+const MAX_REDDITLINK_DECLARATION_SIZE: usize = 2;
 
 impl<'a> RawParser<'a> {
     pub fn new_with_links(text: &'a str, opts: Options,
@@ -186,7 +189,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`<~/ur" {
+            for &c in b"\x00\t\n\r_\\&*[!`<~/" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -1006,7 +1009,6 @@ impl<'a> RawParser<'a> {
     }
 
     fn active_char(&mut self, c: u8) -> Option<Event<'a>> {
-        // println!("active_char: {}", c);
         match c {
             b'\x00' => Some(self.char_null()),
             b'\t' => Some(self.char_tab()),
@@ -1019,7 +1021,7 @@ impl<'a> RawParser<'a> {
             b'[' | b'!' => self.char_link(),
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
-            b'/' | b'u' | b'r' => self.char_redditlink(),
+            b'/' => self.char_forwardslash(),
             _ => None
         }
     }
@@ -1035,6 +1037,47 @@ impl<'a> RawParser<'a> {
         let count = count_tab(&self.text.as_bytes()[.. self.off]);
         self.off += 1;
         Event::Text(Borrowed(&"    "[..count]))
+    }
+
+    fn char_forwardslash(&mut self) -> Option<Event<'a>> {
+        let beg = self.off;
+        let limit = self.limit();
+
+        // ZT: must check if at beginning of text
+        let max_backtrack: usize = if beg >= MAX_REDDITLINK_DECLARATION_SIZE {
+            (beg - MAX_REDDITLINK_DECLARATION_SIZE)
+        } else {
+            0
+        };
+        let prefix = scan_redditlink_prefix(&self.text[max_backtrack..beg]);
+        if prefix != None {
+            let name = scan_redditlink_name(&self.text[beg+1..limit]);
+            if name != None {
+                let prefix = &self.text[beg-prefix.unwrap()..beg];
+                let name = &self.text[beg..beg+name.unwrap()];
+                let redditlink = prefix.to_owned() + name;
+                println!("[{}]({})", redditlink, redditlink);
+            }
+        } else {
+            // ZT: almost there
+            let suffix = scan_redditlink_suffix(&self.text[beg+1..MAX_REDDITLINK_DECLARATION_SIZE+1]);
+            println!("SUFFIX: {}", suffix.unwrap());
+            let remaining = limit - beg;
+            let max_scan: usize = if remaining < 2 {
+                remaining
+            } else {
+                MAX_REDDITLINK_DECLARATION_SIZE
+            };
+            println!("THE PRINT IS {}", beg);
+        }
+        match prefix {
+            Some(0) => println!("it is 0"),
+            Some(1) => println!("it is 1"),
+            None => println!("it is none"),
+            _ => ()
+        }
+
+        None
     }
 
     fn char_backslash(&mut self) -> Option<Event<'a>> {
@@ -1067,36 +1110,7 @@ impl<'a> RawParser<'a> {
         }
     }
 
-    fn char_redditlink(&mut self) -> Option<Event<'a>> {
-        let beg = self.off;
-        let limit = self.limit();
-        let mut i = beg;
-
-        let next = beg;
-
-        // ZT: figure out how to scan to next whitespace
-        i += self.scan_whitespace_inline(&self.text[i..limit]);
-        self.off = i;
-
-        // println!("##### {} - {}", next, self.off);
-        None
-        // let beg = self.off;
-        // let limit = self.limit();
-        // let mut i = beg;
-        // let (n, code_beg, code_end) = self.scan_inline_code(&self.text[i..limit]);
-        // if n == 0 {
-        //     self.off += code_beg - 1;
-        //     return None;
-        // }
-        // i += code_beg;
-        // let end = beg + code_end;
-        // let next = beg + n;
-        // i += self.scan_whitespace_inline(&self.text[i..limit]);
-        // self.off = i;
-        // self.state = State::InlineCode;
-        // Some(self.start(Tag::Code, end, next))
-    }
-
+    // ZT: refactor so that tilde and emphasis can share code
     fn char_tilde(&mut self) -> Option<Event<'a>> {
         // can see to left for flanking info, but not past limit
         let limit = self.limit(); // ZT: length of string
@@ -1135,7 +1149,7 @@ impl<'a> RawParser<'a> {
                             let npop = if ntos < n2 { ntos } else { n2 };
                             if npop == 1 {
                                 self.off += 1;
-                                return None;
+                                return Some(self.start(Tag::Underline, i, i + 1));
                             } else {
                                 self.off += 2;
                                 let next = i + npop;
@@ -1158,6 +1172,7 @@ impl<'a> RawParser<'a> {
                     i += beg;
                 }
             } else if c2 == b'<' {
+                println!("scanning autolink");
                 let n = self.scan_autolink_or_html(&self.text[i..limit]);
                 if n != 0 {
                     i += n;

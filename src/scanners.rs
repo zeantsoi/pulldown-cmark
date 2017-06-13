@@ -3,7 +3,7 @@
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or ƒl
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
@@ -114,6 +114,14 @@ pub fn scan_while<F>(data: &str, f: F) -> usize
     }
 }
 
+fn backtrack_while<F>(data: &str, f: F) -> usize
+        where F: Fn(u8) -> bool {
+    match data.as_bytes().iter().rev().position(|&c| !f(c)) {
+        Some(i) => i,
+        None => 0
+    }
+}
+
 pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
     scan_while(data, |x| x == c)
 }
@@ -121,6 +129,35 @@ pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
 // TODO: maybe should scan unicode whitespace too
 pub fn scan_whitespace_no_nl(data: &str) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
+}
+
+fn scan_redditlink_declaration(data: &str) -> Option<usize> {
+
+    fn _is_acceptable_char(c: char) -> bool {
+         match c {
+            'u' | 'r' => return true,
+            _ => return false
+        };
+    }
+
+    if data.is_empty() {
+        return None;
+    }
+
+    if _is_acceptable_char(data.chars().nth(0).unwrap()) {
+        if data.len() > 1 {
+            if is_ascii_alphanumeric(data.chars().nth(1).unwrap() as u8) {
+                return None;
+            } else {
+                return Some(1);
+            }
+        } else {
+            return Some(1);
+        }
+    } else {
+        return None;
+    }
+
 }
 
 // Maybe returning Option<usize> would be more Rustic?
@@ -414,8 +451,27 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     (w + postn, c, start, w + postindent)
 }
 
+pub fn scan_redditlink_prefix(data: &str) -> Option<usize> {
+    let data = data.chars().rev().collect::<String>();
+    scan_redditlink_declaration(&data)
+}
+
+pub fn scan_redditlink_suffix(data: &str) -> Option<usize> {
+    scan_redditlink_declaration(data)
+}
+
+pub fn scan_redditlink_name(data: &str) -> Option<usize> {
+    let end = scan_while(&data, is_ascii_alphanumeric);
+    if end < 2 {
+        None
+    } else {
+        Some(end)
+    }
+}
+
 // return whether delimeter run can open or close
 pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
+    println!("compute_open_close {}, {}", loc, c);
     // TODO: handle Unicode, not just ASCII
     let size = data.len();
     let mut end = loc + 1;
@@ -443,7 +499,7 @@ pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) 
         b'~' => (left_flanking, right_flanking),
         _ => (false, false)
     };
-    println!("{:?}", (end - loc, can_open, can_close));
+    println!("{}, {:?}", data, (end - loc, can_open, can_close));
     (end - loc, can_open, can_close)
 }
 

@@ -258,21 +258,23 @@ pub fn main() {
     let mut opts = Options::empty();
     // let input = "# Here [is](https://yahoo.com) a link: https://yahoo.com";
     // let input = "/u/a u/a";
-    let input = "~~ma*n* [hi](ht)  ~~  this is *cool* stuff!";
-    print!("{}", render_html(input, opts));
+    // let input = "*a*b    u/foo   ";
+    let input = "afefefefe /umfoo";
+    println!("{}", render_html(input, opts));
+    println!("{}", input);
 }
 
 
 // struct Closure<F> {
 //     data: (u8, u16),
-//     func: F,
+//     func: F,)
+
 // }
 
 // impl<F> Closure<F> where F: Fn(&(u8, u16)) -> &u8,
 // {
 //     fn call(&self) -> &u8 {
-//         (self.func)(&self.data)
-//     }
+//         (self.func)(&self.data//     }
 // }
 
 // fn do_it(data: &(u8, u16)) -> &u8 { &data.0 }
