@@ -457,6 +457,7 @@ pub fn scan_redditlink_prefix(data: &str) -> Option<usize> {
 }
 
 pub fn scan_redditlink_suffix(data: &str) -> Option<usize> {
+    println!("suffix is {}", data);
     scan_redditlink_declaration(data)
 }
 

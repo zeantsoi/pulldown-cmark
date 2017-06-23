@@ -138,7 +138,7 @@ bitflags! {
 
 const MAX_LINK_NEST: usize = 10;
 
-const MAX_REDDITLINK_DECLARATION_SIZE: usize = 2;
+const REDDITLINK_SCAN_SIZE: usize = 2;
 
 impl<'a> RawParser<'a> {
     pub fn new_with_links(text: &'a str, opts: Options,
@@ -1044,8 +1044,8 @@ impl<'a> RawParser<'a> {
         let limit = self.limit();
 
         // ZT: must check if at beginning of text
-        let max_backtrack: usize = if beg >= MAX_REDDITLINK_DECLARATION_SIZE {
-            (beg - MAX_REDDITLINK_DECLARATION_SIZE)
+        let max_backtrack: usize = if beg >= REDDITLINK_SCAN_SIZE {
+            (beg - REDDITLINK_SCAN_SIZE)
         } else {
             0
         };
@@ -1060,15 +1060,13 @@ impl<'a> RawParser<'a> {
             }
         } else {
             // ZT: almost there
-            let suffix = scan_redditlink_suffix(&self.text[beg+1..MAX_REDDITLINK_DECLARATION_SIZE+1]);
-            println!("SUFFIX: {}", suffix.unwrap());
+            
             let remaining = limit - beg;
-            let max_scan: usize = if remaining < 2 {
-                remaining
+            if remaining < 3 {
+                println!("not a link");
             } else {
-                MAX_REDDITLINK_DECLARATION_SIZE
+                let suffix = scan_redditlink_suffix(&self.text[beg+1..REDDITLINK_SCAN_SIZE+1]);
             };
-            println!("THE PRINT IS {}", beg);
         }
         match prefix {
             Some(0) => println!("it is 0"),
