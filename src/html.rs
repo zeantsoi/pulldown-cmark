@@ -159,6 +159,15 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 }
                 self.buf.push_str("\">");
             }
+            Tag::RedditLink(link_type, dest, trim_len) => {
+                for _ in 0..trim_len {
+                    self.buf.pop();
+                }
+                self.buf.push_str("<a href=\"");
+                let redditlink = "/".to_owned() + &link_type + &dest;
+                escape_href(self.buf, &redditlink);
+                self.buf.push_str("\" />");
+            }
             Tag::Image(dest, title) => {
                 self.buf.push_str("<img src=\"");
                 escape_href(self.buf, &dest);
@@ -180,11 +189,6 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
                 self.buf.push_str(&*format!("{}", number));
                 self.buf.push_str("</sup>");
             }
-            Tag::RedditLink => {
-                self.fresh_line();
-                self.buf.push_str("<blockquote>\n");
-            }
-
         }
     }
 
@@ -225,9 +229,9 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Strikethrough => self.buf.push_str("</del>"),
             Tag::Code => self.buf.push_str("</code>"),
             Tag::Link(_, _) => self.buf.push_str("</a>"),
+            Tag::RedditLink(_, _, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => self.buf.push_str("</div>\n"),
-            Tag::RedditLink => self.buf.push_str("</blockquote>\n"),
         }
     }
 

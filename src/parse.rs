@@ -104,8 +104,8 @@ pub enum Tag<'a> {
     Underline,
     Strikethrough,
     Link(Cow<'a, str>, Cow<'a, str>),
+    RedditLink(Cow<'a, str>, Cow<'a, str>, u8),
     Image(Cow<'a, str>, Cow<'a, str>),
-    RedditLink,
 }
 
 #[derive(Clone, Debug)]
@@ -994,7 +994,6 @@ impl<'a> RawParser<'a> {
                 return Event::Text(Borrowed(&self.text[beg..i]));
             }
             if let Some(event) = self.active_char(c) {
-                println!("you are here with {:?}", event);
                 return event;
             }
             i = self.off;  // let handler advance offset even on None
@@ -1022,6 +1021,7 @@ impl<'a> RawParser<'a> {
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
             b'/' => self.char_forwardslash(),
+            // b':' => self.char_colon(),
             _ => None
         }
     }
@@ -1030,6 +1030,10 @@ impl<'a> RawParser<'a> {
         self.off += 1;
         Event::Text(Borrowed("\u{fffd}"))
     }
+
+    // fn char_colon(&mut self) -> Option<Event<'a>> {
+        
+    // }
 
     // expand tab in content (used for code and inline)
     // scan backward to find offset, counting unicode code points
@@ -1042,39 +1046,41 @@ impl<'a> RawParser<'a> {
     fn char_forwardslash(&mut self) -> Option<Event<'a>> {
         let beg = self.off;
         let limit = self.limit();
-
+        let data = &self.text[..limit];
         // ZT: must check if at beginning of text
-        let max_backtrack: usize = if beg >= REDDITLINK_SCAN_SIZE {
+        let max_backtrack: usize = if beg > REDDITLINK_SCAN_SIZE {
             (beg - REDDITLINK_SCAN_SIZE)
         } else {
             0
         };
-        let prefix = scan_redditlink_prefix(&self.text[max_backtrack..beg]);
-        if prefix != None {
-            let name = scan_redditlink_name(&self.text[beg+1..limit]);
-            if name != None {
-                let prefix = &self.text[beg-prefix.unwrap()..beg];
-                let name = &self.text[beg..beg+name.unwrap()];
-                let redditlink = prefix.to_owned() + name;
-                println!("[{}]({})", redditlink, redditlink);
+        let mut short_redditlink_marker = backtrack_redditlink_marker(&self.text[max_backtrack..beg]);
+        if short_redditlink_marker != None {
+            let name_end_index = scan_redditlink_name(&data[beg+1..limit]);
+            if name_end_index != None {
+                let redditlink_type = &data[beg-short_redditlink_marker.unwrap()..beg];
+                let name = &data[beg..beg+1+name_end_index.unwrap()];
+                self.off -= 1;
+                // return None;
+                let buffer_to = beg + name_end_index.unwrap() + 1;
+                self.state = State::Literal;
+                return Some(self.start(Tag::RedditLink(Borrowed(redditlink_type), Borrowed(name), 1), buffer_to, buffer_to));
             }
         } else {
             // ZT: almost there
-            
-            let remaining = limit - beg;
-            if remaining < 3 {
-                println!("not a link");
-            } else {
-                let suffix = scan_redditlink_suffix(&self.text[beg+1..REDDITLINK_SCAN_SIZE+1]);
-            };
+            let marker_start = beg + 1;
+            let long_redditlink_marker = scan_redditlink_marker(&self.text[marker_start..marker_start+REDDITLINK_SCAN_SIZE]);
+            // println!("redditlink_marker {}", redditlink_marker.to_owned());
+            if long_redditlink_marker != None {
+                let name_end_index = scan_redditlink_name(&data[beg+3..limit]);
+                if name_end_index != None {
+                    let redditlink_type = &data[marker_start..marker_start+2];
+                    let name = &data[marker_start+2..marker_start+2+name_end_index.unwrap()];
+                    let buffer_to = marker_start + name_end_index.unwrap() + 2;
+                    self.state = State::Literal;
+                    return Some(self.start(Tag::RedditLink(Borrowed(redditlink_type), Borrowed(name), 0), buffer_to, buffer_to));
+                }
+            }
         }
-        match prefix {
-            Some(0) => println!("it is 0"),
-            Some(1) => println!("it is 1"),
-            None => println!("it is none"),
-            _ => ()
-        }
-
         None
     }
 
@@ -1170,7 +1176,6 @@ impl<'a> RawParser<'a> {
                     i += beg;
                 }
             } else if c2 == b'<' {
-                println!("scanning autolink");
                 let n = self.scan_autolink_or_html(&self.text[i..limit]);
                 if n != 0 {
                     i += n;
@@ -1372,6 +1377,7 @@ impl<'a> RawParser<'a> {
 
     fn char_link(&mut self) -> Option<Event<'a>> {
         self.parse_link(&self.text[self.off .. self.limit()], false).map(|(tag, beg, end, n)| {
+
             let off = self.off;
             self.off += beg;
             self.start(tag, off + end, off + n)
@@ -1442,6 +1448,7 @@ impl<'a> RawParser<'a> {
             };
             (dest, title, text_beg, text_end, i)
         };
+
         if is_image {
             Some((Tag::Image(dest, title), beg, end, next))
         } else {

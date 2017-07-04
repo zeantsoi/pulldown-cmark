@@ -114,6 +114,14 @@ pub fn scan_while<F>(data: &str, f: F) -> usize
     }
 }
 
+pub fn scan_while_not<F>(data: &str, f: F) -> usize
+        where F: Fn(u8) -> bool {
+    match data.as_bytes().iter().position(|&c| f(c)) {
+        Some(i) => i,
+        None => 0
+    }
+}
+
 fn backtrack_while<F>(data: &str, f: F) -> usize
         where F: Fn(u8) -> bool {
     match data.as_bytes().iter().rev().position(|&c| !f(c)) {
@@ -131,31 +139,45 @@ pub fn scan_whitespace_no_nl(data: &str) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
 }
 
-fn scan_redditlink_declaration(data: &str) -> Option<usize> {
-
-    fn _is_acceptable_char(c: char) -> bool {
-         match c {
-            'u' | 'r' => return true,
-            _ => return false
-        };
-    }
-
+// fn _is_redditlink_declaration(c: char) -> bool {
+fn _is_redditlink_type(data: &str) -> bool {
     if data.is_empty() {
+        return false;
+    }
+    let first_char = data.chars().nth(0).unwrap();
+    return first_char == 'u' || first_char == 'r';
+}
+
+fn scan_redditlink_declaration(data: &str) -> Option<usize> {
+    if data.len() < 2 {
         return None;
     }
 
-    if _is_acceptable_char(data.chars().nth(0).unwrap()) {
-        if data.len() > 1 {
-            if is_ascii_alphanumeric(data.chars().nth(1).unwrap() as u8) {
-                return None;
-            } else {
-                return Some(1);
-            }
-        } else {
+    let is_redditlink_type = _is_redditlink_type(data);
+    if !is_redditlink_type {
+        return None;
+    }
+
+    if data.chars().nth(1).unwrap() == '/' {
+        return Some(2);
+    }
+    None
+}
+
+fn backtrack_redditlink_declaration(data: &str) -> Option<usize> {
+    let is_redditlink_type = _is_redditlink_type(data);
+    if !is_redditlink_type {
+        return None;
+    }
+
+    if data.len() > 1 {
+        if data.chars().nth(1).unwrap() == ' ' {
             return Some(1);
+        } else {
+            return None;
         }
     } else {
-        return None;
+        return Some(1);
     }
 
 }
@@ -451,14 +473,13 @@ pub fn scan_listitem(data: &str) -> (usize, u8, usize, usize) {
     (w + postn, c, start, w + postindent)
 }
 
-pub fn scan_redditlink_prefix(data: &str) -> Option<usize> {
+pub fn backtrack_redditlink_marker(data: &str) -> Option<usize> {
     let data = data.chars().rev().collect::<String>();
-    scan_redditlink_declaration(&data)
+    backtrack_redditlink_declaration(&data)
 }
 
-pub fn scan_redditlink_suffix(data: &str) -> Option<usize> {
-    println!("suffix is {}", data);
-    scan_redditlink_declaration(data)
+pub fn scan_redditlink_marker(data: &str) -> Option<usize> {
+    scan_redditlink_declaration(&data)
 }
 
 pub fn scan_redditlink_name(data: &str) -> Option<usize> {
