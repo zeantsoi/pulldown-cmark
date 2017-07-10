@@ -491,6 +491,24 @@ pub fn scan_redditlink_name(data: &str) -> Option<usize> {
     }
 }
 
+pub fn scan_subscript(data: &str) -> Option<usize> {
+    let end = scan_while_not(&data, is_ascii_whitespace);
+    if end < 2 {
+        None
+    } else {
+        Some(end)
+    }
+}
+
+pub fn scan_superscript_line(data: &str) -> usize {
+    let end = scan_while_not(&data, is_ascii_whitespace);
+    if end < 2 {
+        0
+    } else {
+        end
+    }
+}
+
 // return whether delimeter run can open or close
 pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
     println!("compute_open_close {}, {}", loc, c);
