@@ -206,3 +206,66 @@ console.log("fooooo");
 
     assert_eq!(expected, s);
 }
+
+#[test]
+fn html_test_9() {
+    let original = r##"/u/spez /r/pics reddit@reddit.com www.reddit.com ~~strikethrough~~ ~underlined~"##;
+
+    let expected = r##"<p><a href="/u/spez" />/u/spez</a> <a href="/r/pics" />/r/pics</a> reddit@reddit.com www.reddit.com <del>strikethrough</del> <u>underlined</u></p>
+"##;
+
+    use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+
+    let mut s = String::new();
+
+    let mut opts = Options::empty();
+    opts.insert(OPTION_ENABLE_TABLES);
+    opts.insert(OPTION_ENABLE_FOOTNOTES);
+
+    let p = Parser::new_ext(&original, opts);
+    html::push_html(&mut s, p);
+
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn html_test_10() {
+    let original = r##"~~strikethrough~~"##;
+
+    let expected = r##"<p><del>strikethrough</del></p>
+"##;
+
+    use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+
+    let mut s = String::new();
+
+    let mut opts = Options::empty();
+    opts.insert(OPTION_ENABLE_TABLES);
+    opts.insert(OPTION_ENABLE_FOOTNOTES);
+
+    let p = Parser::new_ext(&original, opts);
+    html::push_html(&mut s, p);
+
+    assert_eq!(expected, s);
+}
+
+#[test]
+fn html_test_11() {
+    let original = r##"~underlined~"##;
+
+    let expected = r##"<p><u>underlined</u></p>
+"##;
+
+    use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+
+    let mut s = String::new();
+
+    let mut opts = Options::empty();
+    opts.insert(OPTION_ENABLE_TABLES);
+    opts.insert(OPTION_ENABLE_FOOTNOTES);
+
+    let p = Parser::new_ext(&original, opts);
+    html::push_html(&mut s, p);
+
+    assert_eq!(expected, s);
+}
