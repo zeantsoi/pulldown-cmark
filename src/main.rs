@@ -42,7 +42,7 @@ fn render_html(text: &str, opts: Options) -> String {
 }
 
 pub fn main() {
-    let mut opts = Options::empty();
+    let opts = Options::empty();
     let input = "there^is no place^(like home)";
     print!("{}\n", input);
     print!("{}\n", render_html(input, opts));

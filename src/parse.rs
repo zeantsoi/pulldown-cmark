@@ -1120,18 +1120,45 @@ impl<'a> RawParser<'a> {
         let beg = self.off;
         let limit = self.limit();
         let mut i = beg;
-        let sup_end = scan_superscript_line(&self.text[i..limit]);
-        if sup_end == 0 {
-            self.off += beg - 1;
-            return None;
+        // print!("{}", iself.o);
+        if self.text.chars().nth(i+1).unwrap() == '(' {
+            let sup_end = scan_superscript_paren(&&self.text[i..limit]);
+            if sup_end == 0 {
+                self.off += beg - 1;
+                return None;
+            }
+            i += 2;
+            let end = beg + sup_end;
+            let next = end + 1;
+            self.off = i;
+            self.state = State::Inline;
+            Some(self.start(Tag::Super, end, next))
+        } else {
+            let sup_end = scan_superscript_line(&self.text[i..limit]);
+            if sup_end == 0 {
+                self.off += beg - 1;
+                return None;
+            }
+            i += 1;
+            let end = beg + sup_end;
+            let next = end + 1;
+            i += self.scan_whitespace_inline(&self.text[i..limit]);
+            self.off = i;
+            self.state = State::Inline;
+            Some(self.start(Tag::Super, end, next))
         }
-        i += 1;
-        let end = beg + sup_end;
-        //let next = beg + n;
-        i += self.scan_whitespace_inline(&self.text[i..limit]);
-        self.off = i;
-        self.state = State::Inline;
-        Some(self.start(Tag::Super, end, end))
+    }
+
+    fn scan_close_paren(&self, text: &str) -> usize {
+        let i = scan_close_paren(text);
+        if let (n, true) = scan_eol(&text[i..]) {
+            let (n_containers, _, space) = self.scan_containers(&text[i + n ..]);
+            let j = i + n + n_containers;
+            if !self.is_inline_block_end(&text[j..], space) {
+                return j;
+            }
+        }
+        i
     }
 
     // ZT: refactor so that tilde and emphasis can share code

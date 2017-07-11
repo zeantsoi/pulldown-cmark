@@ -69,6 +69,14 @@ pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
     c == b'\t' || c == 0x0b || c == 0x0c || c == b' '
 }
 
+pub fn is_ascii_close_paren(c: u8) -> bool {
+    (c >= 0x09 && c <= 0x0d) || c == b')'
+}
+
+pub fn is_ascii_close_paren_no_nl(c: u8) -> bool {
+    c == b'\t' || c == 0x0b || c == 0x0c || c == b')'
+}
+
 pub fn is_ascii_alpha(c: u8) -> bool {
     match c {
         b'a' ... b'z' | b'A' ... b'Z' => true,
@@ -137,6 +145,10 @@ pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
 // TODO: maybe should scan unicode whitespace too
 pub fn scan_whitespace_no_nl(data: &str) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
+}
+
+pub fn scan_close_paren(data: &str) -> usize {
+    scan_while_not(data, is_ascii_close_paren)
 }
 
 // fn _is_redditlink_declaration(c: char) -> bool {
@@ -502,6 +514,15 @@ pub fn scan_subscript(data: &str) -> Option<usize> {
 
 pub fn scan_superscript_line(data: &str) -> usize {
     let end = scan_while_not(&data, is_ascii_whitespace);
+    if end < 2 {
+        0
+    } else {
+        end
+    }
+}
+
+pub fn scan_superscript_paren(data: &str) -> usize {
+    let end = scan_while_not(&data, is_ascii_close_paren);
     if end < 2 {
         0
     } else {
