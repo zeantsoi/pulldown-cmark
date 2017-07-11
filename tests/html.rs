@@ -269,3 +269,24 @@ fn html_test_11() {
 
     assert_eq!(expected, s);
 }
+
+#[test]
+fn html_test_12() {
+    let original = r##"http://links.net are ftp://converted.to corresponding https://auto.links, but not if in://correct.com or bare.info"##;
+
+    let expected = r##"<a href="http://links.net">http://links.net</a> are <a href="ftp://converted.to">ftp://converted.to</a> corresponding <a href="https://auto.links">https://auto.links</a>, but not if in://correct.com or bare.info
+"##;
+
+    use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
+
+    let mut s = String::new();
+
+    let mut opts = Options::empty();
+    opts.insert(OPTION_ENABLE_TABLES);
+    opts.insert(OPTION_ENABLE_FOOTNOTES);
+
+    let p = Parser::new_ext(&original, opts);
+    html::push_html(&mut s, p);
+
+    assert_eq!(expected, s);
+}

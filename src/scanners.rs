@@ -38,28 +38,8 @@ const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
     "section", "style", "table", "tbody", "td", "textarea", "tfoot", "th",
     "thead", "tr", "ul", "video"];
 
-const URI_SCHEMES: [&'static str; 164] = ["aaa", "aaas", "about", "acap",
-    "adiumxtra", "afp", "afs", "aim", "apt", "attachment", "aw", "beshare",
-    "bitcoin", "bolo", "callto", "cap", "chrome", "chrome-extension", "cid",
-    "coap", "com-eventbrite-attendee", "content", "crid", "cvs", "data", "dav",
-    "dict", "dlna-playcontainer", "dlna-playsingle", "dns", "doi", "dtn",
-    "dvb", "ed2k", "facetime", "feed", "file", "finger", "fish", "ftp", "geo",
-    "gg", "git", "gizmoproject", "go", "gopher", "gtalk", "h323", "hcp",
-    "http", "https", "iax", "icap", "icon", "im", "imap", "info", "ipn", "ipp",
-    "irc", "irc6", "ircs", "iris", "iris.beep", "iris.lwz", "iris.xpc",
-    "iris.xpcs", "itms", "jar", "javascript", "jms", "keyparc", "lastfm",
-    "ldap", "ldaps", "magnet", "mailto", "maps", "market", "message", "mid",
-    "mms", "ms-help", "msnim", "msrp", "msrps", "mtqp", "mumble", "mupdate",
-    "mvn", "news", "nfs", "ni", "nih", "nntp", "notes", "oid",
-    "opaquelocktoken", "palm", "paparazzi", "platform", "pop", "pres", "proxy",
-    "psyc", "query", "res", "resource", "rmi", "rsync", "rtmp", "rtsp",
-    "secondlife", "service", "session", "sftp", "sgn", "shttp", "sieve", "sip",
-    "sips", "skype", "smb", "sms", "snmp", "soap.beep", "soap.beeps", "soldat",
-    "spotify", "ssh", "steam", "svn", "tag", "teamspeak", "tel", "telnet",
-    "tftp", "things", "thismessage", "tip", "tn3270", "tv", "udp", "unreal",
-    "urn", "ut2004", "vemmi", "ventrilo", "view-source", "webcal", "ws", "wss",
-    "wtai", "wyciwyg", "xcon", "xcon-userid", "xfire", "xmlrpc.beep",
-    "xmlrpc.beeps", "xmpp", "xri", "ymsgr", "z39.50r", "z39.50s"];
+const URI_SCHEMES: [&'static str; 12] = ["http", "https", "ftp", "mailto",
+    "git", "steam", "irc", "news", "mumble", "ssh", "ircs", "ts3server"];
 
 pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
@@ -491,6 +471,18 @@ pub fn scan_redditlink_name(data: &str) -> Option<usize> {
     }
 }
 
+pub fn backtrack_uri_scheme(data: &str) -> Option<usize> {
+    let rev_data = data.chars().rev().collect::<String>();
+    let end = scan_while(&rev_data, is_ascii_alphanumeric);
+    let len = data.len();
+    let scheme = &data[len-end..len];
+    if URI_SCHEMES.iter().any(|v| v == &scheme) {
+        Some(scheme.len())
+    } else {
+        None
+    }
+}
+
 // return whether delimeter run can open or close
 pub fn compute_open_close(data: &str, loc: usize, c: u8) -> (usize, bool, bool) {
     println!("compute_open_close {}, {}", loc, c);
@@ -649,6 +641,18 @@ fn scan_uri(data: &str) -> usize {
         }
     }
     if i == data.len() { return 0; }
+    i
+}
+
+pub fn scan_uri_no_scheme(data: &str) -> usize {
+    let mut i = 0;
+    while i < data.len() {
+        match data.as_bytes()[i] {
+            b'\0' ... b' ' | b'<' | b'>' => break,
+            _ => i += 1
+        }
+    }
+    // if i == data.len() { return 0; }
     i
 }
 
