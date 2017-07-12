@@ -105,6 +105,7 @@ pub enum Tag<'a> {
     Strikethrough,
     Link(Cow<'a, str>, Cow<'a, str>),
     RedditLink(Cow<'a, str>, Cow<'a, str>, u8),
+    AutoLink(Cow<'a, str>, u8),
     Image(Cow<'a, str>, Cow<'a, str>),
 }
 
@@ -189,7 +190,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`<~/" {
+            for &c in b"\x00\t\n\r_\\&*[!`<~/:" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -231,7 +232,6 @@ impl<'a> RawParser<'a> {
             _ => (),
         }
         if next != 0 { self.off = next; }
-
         /*
         if self.stack.is_empty() {
             // TODO maybe: make block ends do this
@@ -1021,7 +1021,7 @@ impl<'a> RawParser<'a> {
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
             b'/' => self.char_forwardslash(),
-            // b':' => self.char_colon(),
+            b':' => self.char_colon(),
             _ => None
         }
     }
@@ -1030,10 +1030,6 @@ impl<'a> RawParser<'a> {
         self.off += 1;
         Event::Text(Borrowed("\u{fffd}"))
     }
-
-    // fn char_colon(&mut self) -> Option<Event<'a>> {
-        
-    // }
 
     // expand tab in content (used for code and inline)
     // scan backward to find offset, counting unicode code points
@@ -1082,6 +1078,30 @@ impl<'a> RawParser<'a> {
             }
         }
         None
+    }
+
+    fn char_colon(&mut self) -> Option<Event<'a>> {
+        let beg = self.off;
+        let limit = self.limit();
+        let data = &self.text[..limit];
+        // if end is less than three chars away, can't be a URI
+        if limit <= beg + 3 {
+            return None;
+        }
+        if &data[beg+1..beg+3] != "//" {
+            return None;
+        }
+        let scheme_len = backtrack_uri_scheme(&data[..beg]);
+        if scheme_len != None {
+            let loc_len = scan_uri_no_scheme(&data[beg+3..]);
+            if loc_len == 0 { return None }
+            let uri = &data[beg-scheme_len.unwrap()..beg+3+loc_len];
+            self.off -= scheme_len.unwrap();
+            self.state = State::Literal;
+            Some(self.start(Tag::AutoLink(Borrowed(uri), scheme_len.unwrap() as u8), beg+uri.len()-scheme_len.unwrap(), 0))
+        } else {
+            None
+        }
     }
 
     fn char_backslash(&mut self) -> Option<Event<'a>> {
