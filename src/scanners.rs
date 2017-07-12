@@ -520,6 +520,7 @@ pub fn scan_superscript_line(data: &str) -> usize {
     scan_while_not(&data, is_ascii_whitespace_or_caret)
 }
 
+// scan to get matching open and closing parens
 pub fn scan_while_counting<F>(data: &str, f: F) -> usize
         where F: Fn(u8) -> bool {
     let mut total = 0;
@@ -535,7 +536,7 @@ pub fn scan_while_counting<F>(data: &str, f: F) -> usize
     0
 }
 
-pub fn scan_superscript_paren(data: &str) -> usize {
+pub fn scan_script_paren(data: &str) -> usize {
     scan_while_counting(&data[1..], is_ascii_close_paren)
 }
 

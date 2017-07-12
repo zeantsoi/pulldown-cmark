@@ -107,6 +107,7 @@ pub enum Tag<'a> {
     RedditLink(Cow<'a, str>, Cow<'a, str>, u8),
     Image(Cow<'a, str>, Cow<'a, str>),
     Super,
+    Sub,
 }
 
 #[derive(Clone, Debug)]
@@ -190,7 +191,7 @@ impl<'a> RawParser<'a> {
         if self.opts.contains(OPTION_FIRST_PASS) {
             self.active_tab[b'\n' as usize] = 1
         } else {
-            for &c in b"\x00\t\n\r_\\&*[!`<~^/" {
+            for &c in b"\x00\t\n\r_\\&*[!`<~^/%" {
                 self.active_tab[c as usize] = 1;
             }
         }
@@ -1023,6 +1024,7 @@ impl<'a> RawParser<'a> {
             b'<' => self.char_lt(),
             b'/' => self.char_forwardslash(),
             b'^' => self.char_caret(),
+            b'%' => self.char_modulo(),
             // b':' => self.char_colon(),
             _ => None
         }
@@ -1121,7 +1123,7 @@ impl<'a> RawParser<'a> {
         let limit = self.limit();
         let mut i = beg;
         if self.text.as_bytes()[i+1] == b'(' {
-            let sup_end = scan_superscript_paren(&&self.text[i..limit]);
+            let sup_end = scan_script_paren(&&self.text[i..limit]);
             if sup_end == 0 {
                 self.off += beg - 1;
                 return None;
@@ -1145,6 +1147,23 @@ impl<'a> RawParser<'a> {
             self.state = State::Inline;
             Some(self.start(Tag::Super, end, next))
         }
+    }
+
+    fn char_modulo(&mut self) -> Option<Event<'a>> {
+        let beg = self.off;
+        let limit = self.limit();
+        let mut i = beg;
+        let sub_end = scan_script_paren(&&self.text[i..limit]);
+        if sub_end == 0 {
+            self.off += beg - 1;
+            return None;
+        }
+        i += 2;
+        let end = beg + sub_end;
+        let next = end + 1;
+        self.off = i;
+        self.state = State::Inline;
+        Some(self.start(Tag::Sub, end, next))
     }
 
     // ZT: refactor so that tilde and emphasis can share code
