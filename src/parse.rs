@@ -1121,7 +1121,7 @@ impl<'a> RawParser<'a> {
         let limit = self.limit();
         let mut i = beg;
         // print!("{}", iself.o);
-        if self.text.chars().nth(i+1).unwrap() == '(' {
+        if self.text.as_bytes()[i+1] == b'(' {
             let sup_end = scan_superscript_paren(&&self.text[i..limit]);
             if sup_end == 0 {
                 self.off += beg - 1;
@@ -1134,15 +1134,18 @@ impl<'a> RawParser<'a> {
             self.state = State::Inline;
             Some(self.start(Tag::Super, end, next))
         } else {
-            let sup_end = scan_superscript_line(&self.text[i..limit]);
+            let sup_end = scan_superscript_line(&&self.text[i+1..limit]);
+            let is_carrot = self.text.as_bytes()[beg+sup_end] == b'^';
+            println!("sup_end {} {} {}", sup_end, self.text.chars().nth(beg+sup_end-1).unwrap(), is_carrot );
             if sup_end == 0 {
                 self.off += beg - 1;
                 return None;
             }
             i += 1;
-            let end = beg + sup_end;
-            let next = end + 1;
-            i += self.scan_whitespace_inline(&self.text[i..limit]);
+            let end = beg + sup_end + 1;
+            let next = end;
+            //if is_carrot { next = end - 1; } else { next = end; }
+            //i += self.scan_whitespace_inline(&self.text[i..limit]);
             self.off = i;
             self.state = State::Inline;
             Some(self.start(Tag::Super, end, next))

@@ -43,7 +43,7 @@ fn render_html(text: &str, opts: Options) -> String {
 
 pub fn main() {
     let opts = Options::empty();
-    let input = "there^is no place^(like home)";
+    let input = "there^isfdgg^s no place^(like home)^(jfdls)";
     print!("{}\n", input);
     print!("{}\n", render_html(input, opts));
 }
