@@ -507,22 +507,12 @@ pub fn scan_redditlink_name(data: &str) -> Option<usize> {
     }
 }
 
-pub fn scan_subscript(data: &str) -> Option<usize> {
-    let end = scan_while_not(&data, is_ascii_whitespace);
-    if end < 2 {
-        None
-    } else {
-        Some(end)
-    }
-}
-
 pub fn scan_superscript_line(data: &str) -> usize {
     scan_while_not(&data, is_ascii_whitespace_or_caret)
 }
 
 // scan to get matching open and closing parens
-pub fn scan_while_counting<F>(data: &str, f: F) -> usize
-        where F: Fn(u8) -> bool {
+pub fn scan_while_counting(data: &str) -> usize {
     let mut total = 0;
     let mut pos = 0;
     for c in data.as_bytes().iter() {
@@ -537,7 +527,7 @@ pub fn scan_while_counting<F>(data: &str, f: F) -> usize
 }
 
 pub fn scan_script_paren(data: &str) -> usize {
-    scan_while_counting(&data[1..], is_ascii_close_paren)
+    scan_while_counting(&data[1..])
 }
 
 // return whether delimeter run can open or close
