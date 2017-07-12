@@ -64,3 +64,11 @@ there^i^s^f^d^g^g^s no place^(like home)^()
 .
 <p>there<sup>i</sup><sup>s</sup><sup>f</sup><sup>d</sup><sup>g</sup><sup>g</sup><sup>s</sup> no place<sup>like home</sup><sup></sup></p>
 ````````````````````````````````
+
+One more time
+
+```````````````````````````````` example
+there^i^s^f^d^g^g^s no place^(like home^(second))^(third)
+.
+<p>there<sup>i</sup><sup>s</sup><sup>f</sup><sup>d</sup><sup>g</sup><sup>g</sup><sup>s</sup> no place<sup>like home<sup>second</sup></sup><sup>third</sup></p>
+````````````````````````````````

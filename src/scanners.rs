@@ -73,6 +73,10 @@ pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
     c == b'\t' || c == 0x0b || c == 0x0c || c == b' '
 }
 
+pub fn is_ascii_open_paren(c: u8) -> bool {
+    (c >= 0x09 && c <= 0x0d) || c == b'('
+}
+
 pub fn is_ascii_close_paren(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b')'
 }
@@ -516,8 +520,23 @@ pub fn scan_superscript_line(data: &str) -> usize {
     scan_while_not(&data, is_ascii_whitespace_or_caret)
 }
 
+pub fn scan_while_counting<F>(data: &str, f: F) -> usize
+        where F: Fn(u8) -> bool {
+    let mut total = 0;
+    let mut pos = 0;
+    for c in data.as_bytes().iter() {
+        pos += 1;
+        if *c == b'(' { total += 1;}
+        if *c == b')' { total -= 1;}
+        if total == 0 {
+            return pos
+        }
+    }
+    0
+}
+
 pub fn scan_superscript_paren(data: &str) -> usize {
-    scan_while_not(&data, is_ascii_close_paren)
+    scan_while_counting(&data[1..], is_ascii_close_paren)
 }
 
 // return whether delimeter run can open or close
