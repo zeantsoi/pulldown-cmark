@@ -38,7 +38,7 @@ What we have below is nested statements
 ```````````````````````````````` example
 there^is no place^(like home)^(like home)^(like home)
 .
-<p>there<sup>is</sup> no place<sup>like home</sup></p>
+<p>there<sup>is</sup> no place<sup>like home</sup><sup>like home</sup><sup>like home</sup></p>
 ````````````````````````````````
 
 What we have below is nested statements
@@ -46,7 +46,7 @@ What we have below is nested statements
 ```````````````````````````````` example
 there^i^s no place^(like home)^(like home)^(like home)
 .
-<p>there<sup>is</sup> no place<sup>like home</sup></p>
+<p>there<sup>i</sup><sup>s</sup> no place<sup>like home</sup><sup>like home</sup><sup>like home</sup></p>
 ````````````````````````````````
 
 The more the merrier
