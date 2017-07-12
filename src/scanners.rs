@@ -517,12 +517,7 @@ pub fn scan_superscript_line(data: &str) -> usize {
 }
 
 pub fn scan_superscript_paren(data: &str) -> usize {
-    let end = scan_while_not(&data, is_ascii_close_paren);
-    if end < 2 {
-        0
-    } else {
-        end
-    }
+    scan_while_not(&data, is_ascii_close_paren)
 }
 
 // return whether delimeter run can open or close
