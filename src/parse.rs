@@ -1084,6 +1084,7 @@ impl<'a> RawParser<'a> {
         let beg = self.off;
         let limit = self.limit();
         let data = &self.text[..limit];
+        // if end is less than three chars away, can't be a URI
         if limit <= beg + 3 {
             return None;
         }

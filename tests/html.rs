@@ -272,9 +272,9 @@ fn html_test_11() {
 
 #[test]
 fn html_test_12() {
-    let original = r##"http://links.net are ftp://converted.to corresponding https://auto.links, but not if in://correct.com or bare.info"##;
+    let original = r##"http://links.net are ftp://converted.to corresponding https://auto.links.with(quotes) (but only http://valid.quo(tes)) - but not if in://correct.com or bare.info."##;
 
-    let expected = r##"<a href="http://links.net">http://links.net</a> are <a href="ftp://converted.to">ftp://converted.to</a> corresponding <a href="https://auto.links">https://auto.links</a>, but not if in://correct.com or bare.info
+    let expected = r##"<p><a href="http://links.net">http://links.net</a> are <a href="ftp://converted.to">ftp://converted.to</a> corresponding <a href="https://auto.links.with(quotes)">https://auto.links.with(quotes)</a> (but only <a href="http://valid.quo(tes)">http://valid.quo(tes)</a>) - but not if in://correct.com or bare.info.</p>
 "##;
 
     use pulldown_cmark::{Parser, html, Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};

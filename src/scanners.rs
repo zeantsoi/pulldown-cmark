@@ -41,6 +41,13 @@ const HTML_TAGS: [&'static str; 50] = ["article", "aside", "blockquote",
 const URI_SCHEMES: [&'static str; 12] = ["http", "https", "ftp", "mailto",
     "git", "steam", "irc", "news", "mumble", "ssh", "ircs", "ts3server"];
 
+fn is_valid_uri_terminating_char(c: u8) -> bool {
+    match c {
+        b'!' | b'.' | b'?' | b',' | b';' | b'"' | b'\'' | b'}' => false,
+        _ => true
+    }
+}
+
 pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
 }
@@ -645,14 +652,51 @@ fn scan_uri(data: &str) -> usize {
 }
 
 pub fn scan_uri_no_scheme(data: &str) -> usize {
+    let mut char_stack: Vec<u8> = vec![];
+    // `true` when the last char closes a valid opening tag (i.e., `[` or `(`)
+    let mut special_last_char: bool = false;
     let mut i = 0;
     while i < data.len() {
         match data.as_bytes()[i] {
-            b'\0' ... b' ' | b'<' | b'>' => break,
-            _ => i += 1
+            b'\0' ... b' ' | b'<' | b'>' => {
+                let preceding_char = data.as_bytes()[i-1];
+                // ZT TODO: what if final char isn't a blank space?
+                if is_valid_uri_terminating_char(preceding_char) {
+                    match preceding_char {
+                        b']' | b')' => if !special_last_char { i -= 1; },
+                        _ => ()
+                    }
+                } else {
+                    i -= 1;
+                }
+                break
+            },
+            b'[' | b'(' => {
+                char_stack.push(data.as_bytes()[i]);
+                special_last_char = false;
+            },
+            b']' | b')' => {
+                let mut comp_char;
+                let last_char = data.as_bytes()[i];
+                comp_char = if last_char == b']' {
+                   b'['
+                } else {
+                    b'('
+                };
+                if char_stack.last() == Some(&comp_char) {
+                    char_stack.pop();
+                    special_last_char = true;
+                } else {
+                    special_last_char = false;
+                }
+            },
+            _ => {
+                special_last_char = false;
+                ()
+            }
         }
+        i += 1;
     }
-    // if i == data.len() { return 0; }
     i
 }
 
