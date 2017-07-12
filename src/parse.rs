@@ -1022,7 +1022,7 @@ impl<'a> RawParser<'a> {
             b'`' => self.char_backtick(),
             b'<' => self.char_lt(),
             b'/' => self.char_forwardslash(),
-            b'^' => self.char_carrot(),
+            b'^' => self.char_caret(),
             // b':' => self.char_colon(),
             _ => None
         }
@@ -1116,11 +1116,10 @@ impl<'a> RawParser<'a> {
         }
     }
 
-    fn char_carrot(&mut self) -> Option<Event<'a>> {
+    fn char_caret(&mut self) -> Option<Event<'a>> {
         let beg = self.off;
         let limit = self.limit();
         let mut i = beg;
-        // print!("{}", iself.o);
         if self.text.as_bytes()[i+1] == b'(' {
             let sup_end = scan_superscript_paren(&&self.text[i..limit]);
             if sup_end == 0 {
@@ -1135,8 +1134,6 @@ impl<'a> RawParser<'a> {
             Some(self.start(Tag::Super, end, next))
         } else {
             let sup_end = scan_superscript_line(&&self.text[i+1..limit]);
-            let is_carrot = self.text.as_bytes()[beg+sup_end] == b'^';
-            println!("sup_end {} {} {}", sup_end, self.text.chars().nth(beg+sup_end-1).unwrap(), is_carrot );
             if sup_end == 0 {
                 self.off += beg - 1;
                 return None;
@@ -1144,24 +1141,10 @@ impl<'a> RawParser<'a> {
             i += 1;
             let end = beg + sup_end + 1;
             let next = end;
-            //if is_carrot { next = end - 1; } else { next = end; }
-            //i += self.scan_whitespace_inline(&self.text[i..limit]);
             self.off = i;
             self.state = State::Inline;
             Some(self.start(Tag::Super, end, next))
         }
-    }
-
-    fn scan_close_paren(&self, text: &str) -> usize {
-        let i = scan_close_paren(text);
-        if let (n, true) = scan_eol(&text[i..]) {
-            let (n_containers, _, space) = self.scan_containers(&text[i + n ..]);
-            let j = i + n + n_containers;
-            if !self.is_inline_block_end(&text[j..], space) {
-                return j;
-            }
-        }
-        i
     }
 
     // ZT: refactor so that tilde and emphasis can share code

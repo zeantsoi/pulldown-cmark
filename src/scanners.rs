@@ -65,8 +65,7 @@ pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
 }
 
-pub fn is_ascii_whitespace_or_carrot(c: u8) -> bool {
-    println!("wh/cr {} {}", c, ((c >= 0x09 && c <= 0x0d) || c == b' ' || c == b'^'));
+pub fn is_ascii_whitespace_or_caret(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' ' || c == b'^'
 }
 
@@ -76,10 +75,6 @@ pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
 
 pub fn is_ascii_close_paren(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b')'
-}
-
-pub fn is_ascii_close_paren_no_nl(c: u8) -> bool {
-    c == b'\t' || c == 0x0b || c == 0x0c || c == b')'
 }
 
 pub fn is_ascii_alpha(c: u8) -> bool {
@@ -518,7 +513,7 @@ pub fn scan_subscript(data: &str) -> Option<usize> {
 }
 
 pub fn scan_superscript_line(data: &str) -> usize {
-    scan_while_not(&data, is_ascii_whitespace_or_carrot)
+    scan_while_not(&data, is_ascii_whitespace_or_caret)
 }
 
 pub fn scan_superscript_paren(data: &str) -> usize {

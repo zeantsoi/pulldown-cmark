@@ -40,10 +40,3 @@ fn render_html(text: &str, opts: Options) -> String {
     html::push_html(&mut s, p);
     s
 }
-
-pub fn main() {
-    let opts = Options::empty();
-    let input = "there^isfdgg^s no place^(like home)^(jfdls)";
-    print!("{}\n", input);
-    print!("{}\n", render_html(input, opts));
-}
