@@ -521,7 +521,7 @@ pub fn scan_while_counting(data: &str) -> usize {
             _ => continue
         }
         if total == 0 {
-            return i+1;
+            return i + 1;
         }
     }
     0
