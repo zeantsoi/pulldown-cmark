@@ -514,13 +514,14 @@ pub fn scan_superscript_line(data: &str) -> usize {
 // scan to get matching open and closing parens
 pub fn scan_while_counting(data: &str) -> usize {
     let mut total = 0;
-    let mut pos = 0;
     for (i, c) in data.as_bytes().iter().enumerate() {
-        pos += 1;
-        if *c == b'(' && !is_escaped(data, i){ total += 1;}
-        if *c == b')' && !is_escaped(data, i){ total -= 1;}
+        match *c {
+            b'(' => total += 1,
+            b')' => total -= 1,
+            _ => continue
+        }
         if total == 0 {
-            return pos
+            return i+1;
         }
     }
     0
