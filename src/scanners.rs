@@ -515,10 +515,10 @@ pub fn scan_superscript_line(data: &str) -> usize {
 pub fn scan_while_counting(data: &str) -> usize {
     let mut total = 0;
     let mut pos = 0;
-    for c in data.as_bytes().iter() {
+    for (i, c) in data.as_bytes().iter().enumerate() {
         pos += 1;
-        if *c == b'(' { total += 1;}
-        if *c == b')' { total -= 1;}
+        if *c == b'(' && !is_escaped(data, i){ total += 1;}
+        if *c == b')' && !is_escaped(data, i){ total -= 1;}
         if total == 0 {
             return pos
         }
