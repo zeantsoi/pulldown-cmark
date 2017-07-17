@@ -1,0 +1,74 @@
+Run this with `cargo run -- -F -s specs/markdown.txt`.
+
+This is how redditlinks are basically used.
+
+```````````````````````````````` example
+/u/spez /r/pics reddit@reddit.com www.reddit.com ~~strikethrough~~ ~underlined~
+.
+<p><a href="/u/spez" />/u/spez</a> <a href="/r/pics" />/r/pics</a> reddit@reddit.com www.reddit.com <del>strikethrough</del> <u>underlined</u></p>
+````````````````````````````````
+
+The strikethrough can be used as such.
+
+```````````````````````````````` example
+~~strikethrough~~
+.
+<p><del>strikethrough</del></p>
+````````````````````````````````
+
+The underline is shown being created below.
+
+```````````````````````````````` example
+~underlined~
+.
+<p><u>underlined</u></p>
+````````````````````````````````
+
+
+We can make superscripts
+
+```````````````````````````````` example
+there^is no place^(like home)
+.
+<p>there<sup>is</sup> no place<sup>like home</sup></p>
+````````````````````````````````
+
+What we have below is nested statements
+
+```````````````````````````````` example
+there^is no place^(like home)^(like home)^(like home)
+.
+<p>there<sup>is</sup> no place<sup>like home</sup><sup>like home</sup><sup>like home</sup></p>
+````````````````````````````````
+
+What we have below is nested statements
+
+```````````````````````````````` example
+there^i^s no place^(like home)^(like home)^(like home)
+.
+<p>there<sup>i</sup><sup>s</sup> no place<sup>like home</sup><sup>like home</sup><sup>like home</sup></p>
+````````````````````````````````
+
+The more the merrier
+
+```````````````````````````````` example
+there^isfdgg^s no place^(like home)^(jfdls)
+.
+<p>there<sup>isfdgg</sup><sup>s</sup> no place<sup>like home</sup><sup>jfdls</sup></p>
+````````````````````````````````
+
+One more time
+
+```````````````````````````````` example
+there^i^s^f^d^g^g^s no place^(like home)^()
+.
+<p>there<sup>i</sup><sup>s</sup><sup>f</sup><sup>d</sup><sup>g</sup><sup>g</sup><sup>s</sup> no place<sup>like home</sup><sup></sup></p>
+````````````````````````````````
+
+One more time
+
+```````````````````````````````` example
+there^i^s^f^d^g^g^s no place^(like home^(second))^(third)
+.
+<p>there<sup>i</sup><sup>s</sup><sup>f</sup><sup>d</sup><sup>g</sup><sup>g</sup><sup>s</sup> no place<sup>like home<sup>second</sup></sup><sup>third</sup></p>
+````````````````````````````````

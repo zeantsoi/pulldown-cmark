@@ -65,8 +65,20 @@ pub fn is_ascii_whitespace(c: u8) -> bool {
     (c >= 0x09 && c <= 0x0d) || c == b' '
 }
 
+pub fn is_ascii_whitespace_or_caret(c: u8) -> bool {
+    (c >= 0x09 && c <= 0x0d) || c == b' ' || c == b'^'
+}
+
 pub fn is_ascii_whitespace_no_nl(c: u8) -> bool {
     c == b'\t' || c == 0x0b || c == 0x0c || c == b' '
+}
+
+pub fn is_ascii_open_paren(c: u8) -> bool {
+    (c >= 0x09 && c <= 0x0d) || c == b'('
+}
+
+pub fn is_ascii_close_paren(c: u8) -> bool {
+    (c >= 0x09 && c <= 0x0d) || c == b')'
 }
 
 pub fn is_ascii_alpha(c: u8) -> bool {
@@ -137,6 +149,10 @@ pub fn scan_ch_repeat(data: &str, c: u8) -> usize {
 // TODO: maybe should scan unicode whitespace too
 pub fn scan_whitespace_no_nl(data: &str) -> usize {
     scan_while(data, is_ascii_whitespace_no_nl)
+}
+
+pub fn scan_close_paren(data: &str) -> usize {
+    scan_while_not(data, is_ascii_close_paren)
 }
 
 // fn _is_redditlink_declaration(c: char) -> bool {
@@ -489,6 +505,30 @@ pub fn scan_redditlink_name(data: &str) -> Option<usize> {
     } else {
         Some(end)
     }
+}
+
+pub fn scan_superscript_line(data: &str) -> usize {
+    scan_while_not(&data, is_ascii_whitespace_or_caret)
+}
+
+// scan to get matching open and closing parens
+pub fn scan_while_counting(data: &str) -> usize {
+    let mut total = 0;
+    for (i, c) in data.as_bytes().iter().enumerate() {
+        match *c {
+            b'(' => total += 1,
+            b')' => total -= 1,
+            _ => continue
+        }
+        if total == 0 {
+            return i + 1;
+        }
+    }
+    0
+}
+
+pub fn scan_script_paren(data: &str) -> usize {
+    scan_while_counting(&data[1..])
 }
 
 // return whether delimeter run can open or close

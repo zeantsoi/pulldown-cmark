@@ -150,6 +150,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Underline => self.buf.push_str("<u>"),
             Tag::Strikethrough => self.buf.push_str("<del>"),
             Tag::Code => self.buf.push_str("<code>"),
+            Tag::Super => self.buf.push_str("<sup>"),
+            Tag::Sub => self.buf.push_str("<sub>"),
             Tag::Link(dest, title) => {
                 self.buf.push_str("<a href=\"");
                 escape_href(self.buf, &dest);
@@ -228,6 +230,8 @@ impl<'a, 'b, I: Iterator<Item=Event<'a>>> Ctx<'b, I> {
             Tag::Underline => self.buf.push_str("</u>"),
             Tag::Strikethrough => self.buf.push_str("</del>"),
             Tag::Code => self.buf.push_str("</code>"),
+            Tag::Super => self.buf.push_str("</sup>"),
+            Tag::Sub => self.buf.push_str("</sub>"),
             Tag::Link(_, _) => self.buf.push_str("</a>"),
             Tag::RedditLink(_, _, _) => self.buf.push_str("</a>"),
             Tag::Image(_, _) => (), // shouldn't happen, handled in start
